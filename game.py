@@ -1,3 +1,4 @@
+import json
 from wsgiref.util import request_uri
 
 import numpy as np
@@ -126,18 +127,23 @@ class Game:
             enemy_x, enemy_y = self.get_enemy_move()
 
         while self.get_game_state() == GameState.Ongoing:
-            if self.verbose: self.print_board()
             agent_x, agent_y = self.get_agent_move()
             self.board[agent_x][agent_y] = self.agent_side
             self.history.append(self.get_board_string())
+            if self.verbose: self.print_board()
+
 
             if self.get_game_state() == GameState.Ongoing:
                 enemy_x, enemy_y = self.get_enemy_move()
                 self.board[enemy_x][enemy_y] = self.agent_side.to_opposing_side()
                 self.history.append(self.get_board_string())
 
+            if self.verbose:
+                print()
+                self.print_board()
+                print('-' * 9)
+
         result = self.get_game_state()
-        if self.verbose: self.print_board()
 
         if self.verbose:
             if result == GameState.Draw:
@@ -147,7 +153,11 @@ class Game:
             else:
                 print("Lost!")
 
+            print(json.dumps(self.history))
+
         return result
 
 
-game = Game()
+game = Game(verbose=True)
+
+game.run_game_loop()
