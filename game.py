@@ -105,11 +105,26 @@ class Game:
         return random.choice(spaces)
 
 
+    def play_agent_move(self):
+        agent_x, agent_y = self.get_agent_move()
+        self.board[agent_x][agent_y] = self.agent_side
+        self.history.append(self.get_board_string())
+
+
+    def play_enemy_move(self):
+        enemy_x, enemy_y = self.get_enemy_move()
+        self.board[enemy_x][enemy_y] = self.agent_side.to_opposing_side()
+        self.history.append(self.get_board_string())
+
+
     def print_board(self):
+        if not self.verbose: return
+        print()
         for i in range(3):
             for j in range(3):
                 print(f"{self.board[i][j].to_str()}", end=" ")
             print()
+        print('-' * 9)
 
 
     def get_board_string(self) -> str:
@@ -123,25 +138,16 @@ class Game:
 
 
     def run_game_loop(self) -> GameState:
-        if self.agent_side == Tile.O:
-            enemy_x, enemy_y = self.get_enemy_move()
-
         while self.get_game_state() == GameState.Ongoing:
-            agent_x, agent_y = self.get_agent_move()
-            self.board[agent_x][agent_y] = self.agent_side
-            self.history.append(self.get_board_string())
-            if self.verbose: self.print_board()
-
-
-            if self.get_game_state() == GameState.Ongoing:
-                enemy_x, enemy_y = self.get_enemy_move()
-                self.board[enemy_x][enemy_y] = self.agent_side.to_opposing_side()
-                self.history.append(self.get_board_string())
-
-            if self.verbose:
-                print()
+            if self.agent_side == Tile.O:
+                self.play_enemy_move()
                 self.print_board()
-                print('-' * 9)
+                if self.get_game_state() == GameState.Ongoing: self.play_agent_move()
+            else:
+                self.play_agent_move()
+                self.print_board()
+                if self.get_game_state() == GameState.Ongoing: self.play_enemy_move()
+            self.print_board()
 
         result = self.get_game_state()
 
@@ -158,6 +164,6 @@ class Game:
         return result
 
 
-game = Game(verbose=True)
+game = Game(verbose=False)
 
 game.run_game_loop()

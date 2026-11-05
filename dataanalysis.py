@@ -6,7 +6,7 @@ from game import GameState
 import json
 
 tournament = Tournament()
-tournament.start_tournament_loop(50)
+tournament.start_tournament_loop(100000)
 tournament.print_results()
 
 tournament.print_sample()
@@ -51,7 +51,8 @@ for game in tournament.games:
 with open("tournament.json", "w") as f:
     json.dump(games_dict, f, indent=2)
 
-len(games_dict)
+
+#####################################
 
 wins = draws = losses = 0
 
@@ -106,6 +107,7 @@ filtered_games = {
 sample = dict(list(filtered_games.items())[:6])
 print(sample)
 
-total_counts = sum(v[1] for v in games_dict.values() if v[0] in (-1, 0, 1))
+total_counts = sum(v[1] for k, v in games_dict.items() if 'E' not in k or v[0] in (-1, 1))
+
 print(f'total: {total_counts}')
 print(f'tournament total: {len(tournament.games)}')

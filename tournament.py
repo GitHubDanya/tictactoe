@@ -45,13 +45,13 @@ class Tournament:
         print()
 
 
-
     def print_results(self):
         print(self.stats)
 
 
     def print_sample(self):
         print(self.games[0].get_board_string())
+
 
     def get_game_at(self, i):
         return self.games[i]
