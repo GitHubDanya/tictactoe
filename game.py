@@ -1,6 +1,4 @@
 import json
-from wsgiref.util import request_uri
-
 import numpy as np
 import random
 from enum import Enum
@@ -47,7 +45,17 @@ def get_free_spaces(board: np.ndarray):
     return [tuple(pos) for pos in np.argwhere(board == Tile.Empty)]
 
 
-def get_board_from_string(self, board_str: str) -> np.ndarray:
+def get_string_from_board(board: np.ndarray) -> str:
+    res = ""
+    for i in range(3):
+        for j in range(3):
+            res += f"{board[i][j].to_str()}"
+
+    res = res.replace(' ', 'E')
+    return res
+
+
+def get_board_from_string(board_str: str) -> np.ndarray:
     char_to_tile = {
         'E': Tile.Empty,
         ' ': Tile.Empty,
@@ -59,12 +67,40 @@ def get_board_from_string(self, board_str: str) -> np.ndarray:
     return np.array(tiles, dtype=object).reshape((3, 3))
 
 
-class Game:
-    def __init__(self, verbose=False):
+def get_possible_moves(board: str, side: Tile) -> list[str]:
+    res = []
+
+    for i in range(len(board)):
+        if board[i] == 'E':
+            new_str = board[:i] + side.to_str() + board[i+1:]
+            res.append(new_str)
+
+    return res
+
+class GameOptions:
+    def __init__(self):
         self.agent_side = Tile.X
+        self.ai_on = True
+        self.epsilon = 0.1
+        self.tournament_path = "tournament.json"
+        self.verbose = False
+
+class Game:
+    def __init__(self, options: GameOptions):
+        # Init defaults
         self.board = np.full((3, 3), Tile.Empty)
         self.history = []
-        self.verbose = verbose
+
+        # Load options
+        self.agent_side = options.agent_side
+        self.verbose = options.verbose
+
+        # Configure smart guessing
+        if options.ai_on:
+            self.epsilon = options.epsilon
+            self.tournament_path = options.tournament_path
+            with open(self.tournament_path, 'r', encoding='utf-8') as file:
+                self.tournament = json.load(file)
 
 
     def get_game_state(self) -> GameState:
@@ -100,21 +136,57 @@ class Game:
         return x-1, y-1
 
 
+    def play_agent_move_random(self):
+        agent_x, agent_y = self.get_agent_move()
+        self.board[agent_x][agent_y] = self.agent_side
+        self.history.append(get_string_from_board(self.board))
+
+    def play_agent_move(self):
+        probability = random.random()
+        if self.epsilon is None or probability < self.epsilon:
+            self.play_agent_move_random()
+            return
+
+        possible_moves = get_possible_moves(get_string_from_board(self.board), self.agent_side)
+        matching_tournament_moves = {
+            move: self.tournament[move] for move in possible_moves if move in self.tournament
+        }
+        matching_tournament_moves = sorted(
+            matching_tournament_moves.items(), key=lambda item: item[1][0], reverse=True
+        )
+
+        if len(matching_tournament_moves) <= 0:
+            self.play_agent_move_random()
+            return
+
+        desired_board = matching_tournament_moves[0][0]
+        current_board = get_string_from_board(self.board)
+        x, y = -1, -1
+
+        for i in range(len(desired_board)):
+            if desired_board[i] != current_board[i]:
+                x = i // 3
+                y = i % 3
+                break
+
+        if x < 0 or y < 0:
+            print("Error finding next board!")
+            return
+
+        self.board[x][y] = self.agent_side
+        self.history.append(get_string_from_board(self.board))
+
+
+
     def get_enemy_move(self) -> tuple[int, int]:
         spaces = get_free_spaces(self.board)
         return random.choice(spaces)
 
 
-    def play_agent_move(self):
-        agent_x, agent_y = self.get_agent_move()
-        self.board[agent_x][agent_y] = self.agent_side
-        self.history.append(self.get_board_string())
-
-
     def play_enemy_move(self):
         enemy_x, enemy_y = self.get_enemy_move()
         self.board[enemy_x][enemy_y] = self.agent_side.to_opposing_side()
-        self.history.append(self.get_board_string())
+        self.history.append(get_string_from_board(self.board))
 
 
     def print_board(self):
@@ -125,16 +197,6 @@ class Game:
                 print(f"{self.board[i][j].to_str()}", end=" ")
             print()
         print('-' * 9)
-
-
-    def get_board_string(self) -> str:
-        res = ""
-        for i in range(3):
-            for j in range(3):
-                res += f"{self.board[i][j].to_str()}"
-
-        res = res.replace(' ', 'E')
-        return res
 
 
     def run_game_loop(self) -> GameState:
@@ -164,6 +226,8 @@ class Game:
         return result
 
 
-game = Game(verbose=False)
+game_options = GameOptions()
+game_options.verbose = True
+game = Game(game_options)
 
 game.run_game_loop()
