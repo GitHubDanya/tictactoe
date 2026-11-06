@@ -1,11 +1,9 @@
-import game
-from game import Game
-from game import GameState
-from game import GameOptions
-
+from game import *
+from utils import *
 
 class Tournament:
-    def __init__(self):
+    def __init__(self, game_options: GameOptions = GameOptions()):
+        self.game_options = game_options
         self.games = []
 
         self.stats = {
@@ -18,10 +16,9 @@ class Tournament:
 
     def start_tournament_loop(self, n: int):
         bar_length = 30
-        game_options = GameOptions()
 
         for i in range(n):
-            curr = Game(game_options)
+            curr = Game(self.game_options)
             result = curr.run_game_loop()
             self.games.append(curr)
 
