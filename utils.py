@@ -76,7 +76,7 @@ def get_board_from_string(board_str: str) -> np.ndarray:
     return np.array(tiles, dtype=object).reshape((3, 3))
 
 
-def get_possible_moves(board: str, side: Tile) -> list[str]:
+def get_possible_boards(board: str, side: Tile) -> list[str]:
     res = []
 
     for i in range(len(board)):

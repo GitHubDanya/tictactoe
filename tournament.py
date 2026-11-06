@@ -49,7 +49,7 @@ class Tournament:
 
 
     def print_sample(self):
-        print(self.games[0].get_board_string())
+        print(get_string_from_board(self.games[0].board))
 
 
     def get_game_at(self, i):
